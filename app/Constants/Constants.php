@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Constants;
+
+class Constants
+{
+    public const ROLE_SUPER_ADMIN = 'Super Admin';
+    public const ROLE_HALL_PROVOST = 'Hall Provost';
+    public const ROLE_STUDENT = 'Student';
+    public const ROLE_EMPLOYEE = 'Employee';
+    public const ROLE_HOUSE_TUTOR = 'House Tutor';
+    public const MONTHLY = 'monthly';
+    public const YEARLY = 'yearly';
+    public const MONTHS = 'months';
+    public const SUCCESS = 'success';
+    public const ERROR = 'error';
+    public const Y_M_D = 'YYYY-MM-DD';
+    public const M_D_Y = 'MM-DD-YYYY';
+    public const D_M_Y = 'DD-MM-YYYY';
+    public const SINGLE = 'single';
+    public const MARRIED = 'married';
+    public const LEGAL_COHABITANT = 'legal-cohabitant';
+    public const WIDOWER = 'widower';
+    public const DIVORCED = 'divorced';
+    public const MALE = 'male';
+    public const FEMALE = 'female';
+    public const OTHERS = 'others';
+}
