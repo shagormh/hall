@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import { Link } from '@inertiajs/vue3';
+import SpeedInsights from '@/Components/Analytics/SpeedInsights.vue';
 </script>
 
 <template>
@@ -17,4 +18,5 @@ import { Link } from '@inertiajs/vue3';
             <slot />
         </div>
     </div>
+    <SpeedInsights />
 </template>

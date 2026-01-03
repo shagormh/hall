@@ -33,6 +33,7 @@
         <!--end::Page-->
     </div>
     <KTScrollTop />
+    <SpeedInsights />
 </template>
 
 <script setup lang="ts">
@@ -46,6 +47,7 @@ import LayoutService from "@/Core/services/LayoutService";
 import {initializeComponents, reinitializeComponents} from "@/Core/plugins/keenthemes";
 import KTScrollTop from "@/Layouts/default-layout/components/extras/ScrollTop.vue";
 import FlashMessage from '@/Components/Message/FlashMessage.vue';
+import SpeedInsights from '@/Components/Analytics/SpeedInsights.vue';
 
 const showingNavigationDropdown = ref(false);
 onBeforeMount(() => {
