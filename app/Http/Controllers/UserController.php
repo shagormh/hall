@@ -91,11 +91,20 @@ class UserController extends Controller implements HasMiddleware
         $roles = $this->roleService->getActiveRoles();
         // $activityLogs = $this->activityLogService->getActivityLogs($user);
         $authenticationLogs = $this->authenticationLogService->getAuthenticationLogs($user);
-        
+
         $studentDetails = null;
         if ($user->hasRole(Constants::ROLE_STUDENT)) {
             $student = \App\Models\Student::where('user_id', $user->id)
-                ->with(['hall', 'activeAllotment', 'hallAllotments', 'department']) // eager load relationships
+                ->with([
+                    'hall',
+                    'activeAllotment' => function($q) {
+                        $q->with(['seat' => function($sq) {
+                            $sq->with('room');
+                        }]);
+                    },
+                    'hallAllotments',
+                    'department'
+                ]) // eager load relationships
                 ->first();
 
             if ($student) {
@@ -103,14 +112,14 @@ class UserController extends Controller implements HasMiddleware
                 $fees = \App\Models\StudentFee::where('student_id', $student->id)
                     ->orderByDesc('created_at')
                     ->get();
-                
+
                 $studentDetails = [
                     'student' => $student,
                     'fees' => $fees,
                 ];
             }
         }
-        
+
         $assignedHalls = null;
         if ($user->hasRole([Constants::ROLE_HALL_PROVOST, Constants::ROLE_HOUSE_TUTOR])) {
             if (!empty($user->halls)) {
@@ -155,7 +164,7 @@ class UserController extends Controller implements HasMiddleware
         $user = $this->userService->getUserDetails($user);
         $isUpdated = $this->userService->updateUser($user, $validatedData);
         $status = $isUpdated ? Constants::SUCCESS : Constants::ERROR;
-        $message = $isUpdated ? __('message.custom.user.update.basic.success') : __('message.custom.user.basic.error');
+        $message = $isUpdated ? __('message.custom.user.update.basic.success') : __('message.custom.user.update.basic.error');
         return Redirect::route('users.index')->with($status, $message);
     }
 
@@ -165,7 +174,7 @@ class UserController extends Controller implements HasMiddleware
         $user = $this->userService->getUserDetails($user);
         $isUpdated = $this->userService->updateUser($user, ['email' => $validatedData['email'], 'name' => $validatedData['name']]);
         $status = $isUpdated ? Constants::SUCCESS : Constants::ERROR;
-        $message = $isUpdated ? __('message.custom.user.update.updateDetails.success') : __('message.custom.user.updateDetails.error');
+        $message = $isUpdated ? __('message.custom.user.update.updateDetails.success') : __('message.custom.user.update.updateDetails.error');
         return Redirect::back()->with($status, $message);
     }
 
@@ -175,7 +184,7 @@ class UserController extends Controller implements HasMiddleware
         $user = $this->userService->getUserDetails($user);
         $isUpdated = $this->userService->updateUser($user, ['email' => $validatedData['email']]);
         $status = $isUpdated ? Constants::SUCCESS : Constants::ERROR;
-        $message = $isUpdated ? __('message.custom.user.update.updateEmail.success') : __('message.custom.user.updateEmail.error');
+        $message = $isUpdated ? __('message.custom.user.update.updateEmail.success') : __('message.custom.user.update.updateEmail.error');
         return Redirect::back()->with($status, $message);
     }
 
@@ -185,7 +194,7 @@ class UserController extends Controller implements HasMiddleware
         $user = $this->userService->getUserDetails($user);
         $isUpdated = $this->userService->updateUser($user, ['roles' => $validatedData['roles']]);
         $status = $isUpdated ? Constants::SUCCESS : Constants::ERROR;
-        $message = $isUpdated ? __('message.custom.user.update.updateRoles.success') : __('message.custom.user.updateRoles.error');
+        $message = $isUpdated ? __('message.custom.user.update.updateRoles.success') : __('message.custom.user.update.updateRoles.error');
         return Redirect::back()->with($status, $message);
     }
 
@@ -195,7 +204,7 @@ class UserController extends Controller implements HasMiddleware
         $user = $this->userService->getUserDetails($user);
         $isUpdated = $this->userService->updatePassword($user, $validatedData);
         $status = $isUpdated ? Constants::SUCCESS : Constants::ERROR;
-        $message = $isUpdated ? __('message.custom.user.update.updatePassword.success') : __('message.custom.user.updatePassword.error');
+        $message = $isUpdated ? __('message.custom.user.update.updatePassword.success') : __('message.custom.user.update.updatePassword.error');
         return Redirect::back()->with($status, $message);
     }
 

@@ -29,6 +29,10 @@
                                         <div class="d-flex align-items-center gap-2 mt-1">
                                             <span class="badge badge-light-primary fw-bold fs-8">Roll: {{ student.roll }}</span>
                                             <span v-if="student.registration" class="badge badge-light-info fw-bold fs-8">Reg: {{ student.registration }}</span>
+                                            <span v-if="student.active_allotment?.seat?.room && student.active_allotment?.seat?.seat_label" 
+                                                  class="badge badge-light-warning fw-bold fs-8">
+                                                Room: {{ student.active_allotment.seat.room.room_number }}-{{ student.active_allotment.seat.seat_label }}
+                                            </span>
                                         </div>
                                         <span class="fs-8 text-muted mt-1">{{ student.hall?.name }}</span>
                                     </div>
@@ -137,19 +141,29 @@
 
                     <!-- Quick Stats -->
                     <div class="row g-4 mt-5">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="bg-light-info rounded p-5 border border-info border-opacity-10">
                                 <span class="text-info fw-bold d-block fs-8 uppercase mb-1">লেনদেন আইডি</span>
                                 <span class="text-gray-800 fw-bold fs-7 font-mono">ALLOT-{{ feeSummary.allotment?.id || 'N/A' }}</span>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="bg-light-primary rounded p-5 border border-primary border-opacity-10">
                                 <span class="text-primary fw-bold d-block fs-8 uppercase mb-1">বরাদ্দের তারিখ</span>
                                 <span class="text-gray-800 fw-bold fs-7">{{ feeSummary.allotment?.allotment_date || 'N/A' }}</span>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <div class="bg-light-warning rounded p-5 border border-warning border-opacity-10">
+                                <span class="text-warning fw-bold d-block fs-8 uppercase mb-1">রুম-সিট</span>
+                                <span class="text-gray-800 fw-bold fs-7">
+                                    {{ feeSummary.allotment?.seat?.room?.room_number && feeSummary.allotment?.seat?.seat_label 
+                                        ? `${feeSummary.allotment.seat.room.room_number}-${feeSummary.allotment.seat.seat_label}` 
+                                        : 'N/A' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
                             <div class="bg-light-success rounded p-5 border border-success border-opacity-10">
                                 <span class="text-success fw-bold d-block fs-8 uppercase mb-1">মোট মাস</span>
                                 <span class="text-gray-800 fw-bold fs-7 font-black">{{ feeSummary.total_months }} মাস</span>

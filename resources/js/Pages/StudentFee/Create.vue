@@ -44,7 +44,15 @@
                                     </div>
                                 </div>
                             </div>
-                            <div v-if="form.errors.student_id" class="fv-plugins-message-container invalid-feedback">{{ form.errors.student_id }}</div>
+                            <div v-if="form.errors.student_id" class="mt-3">
+                                <div class="alert alert-danger d-flex align-items-start p-4 mb-0">
+                                    <KTIcon icon-name="shield-cross" icon-class="fs-2hx text-danger me-3 mt-1" />
+                                    <div class="d-flex flex-column">
+                                        <h4 class="mb-1 text-danger fw-bold font-bengali">অননুমোদিত প্রচেষ্টা!</h4>
+                                        <span class="font-bengali fw-semibold">{{ form.errors.student_id }}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Hall Selection -->
@@ -52,7 +60,7 @@
                             <label class="fs-6 fw-semibold mb-2 font-bengali">হল নির্বাচন করুন</label>
                             <select
                                 v-model="form.hall_id"
-                                class="form-select form-select-solid h-45px fs-6 fw-bold"
+                                :class="['form-select form-select-solid h-45px fs-6 fw-bold', form.errors.hall_id ? 'is-invalid border-danger' : '']"
                                 required
                             >
                                 <option value="">হল নির্বাচন করুন</option>
@@ -60,7 +68,10 @@
                                     {{ hall.name }}
                                 </option>
                             </select>
-                            <div v-if="form.errors.hall_id" class="fv-plugins-message-container invalid-feedback">{{ form.errors.hall_id }}</div>
+                            <div v-if="form.errors.hall_id" class="alert alert-danger mt-3 p-3 font-bengali">
+                                <KTIcon icon-name="information-5" icon-class="fs-3 me-2" />
+                                {{ form.errors.hall_id }}
+                            </div>
                         </div>
                     </div>
 
@@ -89,6 +100,23 @@
                                 <span class="fs-6 fw-bold text-primary font-bengali">ভাউচার প্রসেস হচ্ছে...</span>
                             </div>
                         </div>
+                        
+                        <!-- Voucher Security Error -->
+                        <div v-if="form.errors.voucher_path" class="mt-4">
+                            <div class="alert alert-danger d-flex align-items-start p-5 mb-0 shadow-sm">
+                                <KTIcon icon-name="shield-cross" icon-class="fs-2tx text-danger me-4 mt-1" />
+                                <div class="d-flex flex-column">
+                                    <h4 class="mb-2 text-danger fw-bolder font-bengali fs-3">⚠️ নিরাপত্তা সতর্কতা!</h4>
+                                    <span class="font-bengali fw-semibold fs-5 text-dark">{{ form.errors.voucher_path }}</span>
+                                    <div class="mt-3 p-3 bg-light-danger rounded">
+                                        <p class="mb-0 font-bengali text-danger fw-bold fs-7">
+                                            <KTIcon icon-name="information" icon-class="fs-3 me-1" />
+                                            দয়া করে শুধুমাত্র আপনার নিজের পেমেন্ট ভাউচার জমা দিন। অন্যের ভাউচার জমা দেওয়া আইনত দণ্ডনীয় অপরাধ।
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="row g-9 mb-8">
@@ -101,11 +129,20 @@
                                     v-model="form.transaction_id"
                                     type="text"
                                     placeholder="যেমন: AB0157733"
-                                    class="form-control form-control-solid ps-12 h-45px fs-6 fw-bold"
+                                    :class="['form-control form-control-solid ps-12 h-45px fs-6 fw-bold', form.errors.transaction_id ? 'is-invalid border-danger' : '']"
                                     required
                                 />
                             </div>
-                            <div v-if="form.errors.transaction_id" class="fv-plugins-message-container invalid-feedback text-danger fs-7 mt-1">{{ form.errors.transaction_id }}</div>
+                            <!-- Enhanced Error Display -->
+                            <div v-if="form.errors.transaction_id" class="mt-3">
+                                <div class="alert alert-danger d-flex align-items-center p-4 mb-0">
+                                    <KTIcon icon-name="information-5" icon-class="fs-2hx text-danger me-4" />
+                                    <div class="d-flex flex-column">
+                                        <h4 class="mb-1 text-danger fw-bold font-bengali">একই লেনদেন আইডি!</h4>
+                                        <span class="font-bengali fw-semibold">{{ form.errors.transaction_id }}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Amount -->
@@ -117,14 +154,17 @@
                                     v-model="form.amount"
                                     type="number"
                                     placeholder="৯০০"
-                                    class="form-control form-control-solid ps-12 h-45px fs-5 fw-black text-primary"
+                                    :class="['form-control form-control-solid ps-12 h-45px fs-5 fw-black text-primary', form.errors.amount ? 'is-invalid border-danger' : '']"
                                     required
                                 />
                                 <span class="badge badge-light-primary position-absolute end-0 top-50 translate-middle-y me-4 fw-bold">
                                     {{ monthsCovered }} মাস
                                 </span>
                             </div>
-                            <div v-if="form.errors.amount" class="fv-plugins-message-container invalid-feedback text-danger fs-7 mt-1">{{ form.errors.amount }}</div>
+                            <div v-if="form.errors.amount" class="alert alert-danger mt-3 p-3 font-bengali">
+                                <KTIcon icon-name="information-5" icon-class="fs-3 me-2" />
+                                {{ form.errors.amount }}
+                            </div>
                         </div>
                     </div>
 
@@ -137,11 +177,14 @@
                                 <input
                                     v-model="form.payment_date"
                                     type="date"
-                                    class="form-control form-control-solid ps-12 h-45px fs-6 fw-bold"
+                                    :class="['form-control form-control-solid ps-12 h-45px fs-6 fw-bold', form.errors.payment_date ? 'is-invalid border-danger' : '']"
                                     required
                                 />
                             </div>
-                            <div v-if="form.errors.payment_date" class="fv-plugins-message-container invalid-feedback text-danger fs-7 mt-1">{{ form.errors.payment_date }}</div>
+                            <div v-if="form.errors.payment_date" class="alert alert-danger mt-3 p-3 font-bengali">
+                                <KTIcon icon-name="information-5" icon-class="fs-3 me-2" />
+                                {{ form.errors.payment_date }}
+                            </div>
                         </div>
 
                         <!-- Details -->

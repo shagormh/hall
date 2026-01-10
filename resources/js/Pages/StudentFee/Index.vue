@@ -92,6 +92,10 @@
                                         <span class="text-gray-800 text-hover-primary mb-1 fw-bold">{{ fee.student?.name }}</span>
                                         <span class="fs-7 text-muted">{{ fee.student?.roll }}</span>
                                         <span class="fs-8 text-primary opacity-50">{{ fee.student?.registration }}</span>
+                                        <span v-if="fee.student?.active_allotment?.seat?.room && fee.student?.active_allotment?.seat?.seat_label" 
+                                              class="fs-8 text-warning badge badge-light-warning mt-1">
+                                            Room: {{ fee.student.active_allotment.seat.room.room_number }}-{{ fee.student.active_allotment.seat.seat_label }}
+                                        </span>
                                     </div>
                                 </td>
                                 <td>

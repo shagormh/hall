@@ -288,6 +288,18 @@
                                                             <span class="fw-bold">Allotment Date:</span>
                                                             <span>{{ new Date(props.studentDetails.student.active_allotment.allotment_date).toLocaleDateString() }}</span>
                                                         </div>
+                                                            <div class="d-flex align-items-center gap-2" v-if="props.studentDetails.student.active_allotment?.seat">
+                                                                <KTIcon icon-name="home-2" icon-class="fs-2 text-primary" />
+                                                                <span class="fw-bold">Room & Seat:</span>
+                                                                <span class="badge badge-light-warning fw-bold fs-6">
+                                                                    {{ props.studentDetails.student.active_allotment.seat.room?.room_number }}-{{ props.studentDetails.student.active_allotment.seat.seat_label }}
+                                                                </span>
+                                                            </div>
+                                                            <div class="d-flex align-items-center gap-2" v-else>
+                                                                <KTIcon icon-name="flag" icon-class="fs-2" />
+                                                                <span class="fw-bold">Seat Number:</span>
+                                                                <span>Not Assigned</span>
+                                                            </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -414,6 +426,17 @@ import KTIcon from "@/Core/helpers/kt-icon/KTIcon.vue";
 
 const { t } = i18n.global;
 
+interface Hall {
+    id: number;
+    name: string;
+    is_active: boolean;
+}
+
+interface Breadcrumb {
+    url: string;
+    title: string;
+}
+
 const props = defineProps({
     user: Object,
     roles: Object,
@@ -422,20 +445,15 @@ const props = defineProps({
     breadcrumbs: Array as() => Breadcrumb[],
     pageTitle: String,
     studentDetails: Object, 
-    assignedHalls: Array, // Added prop
+    assignedHalls: Array as () => Hall[], // Added prop with type
 });
-
-interface Breadcrumb {
-    url: string;
-    title: string;
-}
 
 const isDetailsVisible = ref(true);
 const toggleDetails = () => {
   isDetailsVisible.value = !isDetailsVisible.value;
 };
 
-const activeTab = ref(props.studentDetails ? 5 : (props.assignedHalls ? 6 : 2));
+const activeTab = ref(props.studentDetails ? 5 : (props.assignedHalls && props.assignedHalls.length > 0 ? 6 : 2));
 const tabTitle = ref(props?.pageTitle);
 watch(activeTab, (newValue) => {
     if(activeTab.value == 5) {

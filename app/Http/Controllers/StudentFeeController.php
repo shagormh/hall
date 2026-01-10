@@ -11,6 +11,8 @@ use Inertia\Inertia;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use App\Models\StudentFee;
 
 class StudentFeeController extends Controller implements HasMiddleware
@@ -132,7 +134,57 @@ class StudentFeeController extends Controller implements HasMiddleware
             'payment_date' => 'required|date',
             'fee_details' => 'nullable|string',
             'voucher_path' => 'nullable|string',
+        ], [
+            'transaction_id.required' => 'লেনদেন আইডি প্রয়োজন।',
+            'transaction_id.unique' => 'এই লেনদেন আইডি দিয়ে ইতিমধ্যে ফি জমা দেওয়া হয়েছে। অনুগ্রহ করে সঠিক লেনদেন আইডি নিশ্চিত করুন।',
+            'student_id.required' => 'শিক্ষার্থী নির্বাচন করুন।',
+            'student_id.exists' => 'নির্বাচিত শিক্ষার্থী খুঁজে পাওয়া যায়নি।',
+            'hall_id.required' => 'হল নির্বাচন করুন।',
+            'hall_id.exists' => 'নির্বাচিত হল খুঁজে পাওয়া যায়নি।',
+            'amount.required' => 'টাকার পরিমাণ প্রয়োজন।',
+            'amount.numeric' => 'টাকার পরিমাণ সংখ্যা হতে হবে।',
+            'amount.min' => 'টাকার পরিমাণ ১ টাকার বেশি হতে হবে।',
+            'payment_date.required' => 'পরিশোধের তারিখ প্রয়োজন।',
+            'payment_date.date' => 'সঠিক তারিখ প্রদান করুন।',
         ]);
+
+        // Security Check 1: Students can only submit their own fees
+        $currentUser = Auth::user();
+        $student = $this->studentService->findOrFail($validated['student_id']);
+        
+        // If the current user is a student (not admin/provost), ensure they can only submit their own fee
+        if ($currentUser->hasRole('student') && $student->user_id !== $currentUser->id) {
+            return redirect()->back()
+                ->withErrors(['student_id' => 'আপনি শুধুমাত্র নিজের ফি জমা দিতে পারবেন। অন্য কারো পক্ষে ফি জমা দেওয়া নিষিদ্ধ।'])
+                ->withInput();
+        }
+
+        // Security Check 2: Verify voucher belongs to the selected student
+        if (!empty($validated['voucher_path'])) {
+            $voucherFullPath = Storage::disk('public')->path($validated['voucher_path']);
+            
+            if (file_exists($voucherFullPath)) {
+                try {
+                    $content = shell_exec("pdftotext -layout {$voucherFullPath} -");
+                    if ($content) {
+                        $hasRoll = str_contains($content, $student->roll);
+                        $hasRegistration = $student->registration && str_contains($content, $student->registration);
+                        
+                        if (!$hasRoll && !$hasRegistration) {
+                            // Delete the fraud attempt file
+                            Storage::disk('public')->delete($validated['voucher_path']);
+                            
+                            return redirect()->back()
+                                ->withErrors(['voucher_path' => 'ভাউচারে আপনার রোল নম্বর (' . $student->roll . ') বা রেজিস্ট্রেশন নম্বর পাওয়া যায়নি। অনুগ্রহ করে শুধুমাত্র নিজের ভাউচার জমা দিন।'])
+                                ->withInput();
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Voucher verification failed: " . $e->getMessage());
+                    // Continue if PDF reading fails - manual verification will catch fraud
+                }
+            }
+        }
 
         $validated['months_count'] = floor($validated['amount'] / 150);
         $validated['status'] = 'pending';

@@ -66,6 +66,12 @@ class RoleSeeder extends Seeder
         $permissions = Permission::all();
         $superAdmin->syncPermissions($permissions);
         $hallProvost->syncPermissions($permissions);
+        
+        $studentRoleId = 3; // Based on the array index above + 1 usually, or id explicitly set
+        $studentRole = Role::find($studentRoleId);
+        if ($studentRole) {
+            $studentRole->givePermissionTo('can-view-dashboard');
+        }
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }

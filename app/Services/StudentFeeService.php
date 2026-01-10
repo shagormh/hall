@@ -96,7 +96,17 @@ class StudentFeeService
 
     public function getAllFees($params = [])
     {
-        $query = StudentFee::with(['student', 'hall', 'processor']);
+        $query = StudentFee::with([
+            'student' => function($q) {
+                $q->with(['activeAllotment' => function($aq) {
+                    $aq->with(['seat' => function($sq) {
+                        $sq->with('room');
+                    }]);
+                }]);
+            }, 
+            'hall', 
+            'processor'
+        ]);
 
         if (isset($params['hall_id']) && $params['hall_id']) {
             if (is_array($params['hall_id'])) {
@@ -141,7 +151,9 @@ class StudentFeeService
     public function getFeeSummary($studentId)
     {
         $student = \App\Models\Student::with(['hall', 'hallAllotments' => function($q) {
-            $q->where('status', 'active')->latest();
+            $q->where('status', 'active')->with(['seat' => function($sq) {
+                $sq->with('room');
+            }])->latest();
         }])->findOrFail($studentId);
 
         $allotment = $student->hallAllotments->first();
@@ -168,7 +180,11 @@ class StudentFeeService
 
     public function searchStudentsForChecker($query)
     {
-        return \App\Models\Student::with('hall')
+        return \App\Models\Student::with(['hall', 'activeAllotment' => function($q) {
+            $q->with(['seat' => function($sq) {
+                $sq->with('room');
+            }]);
+        }])
             ->where('roll', 'like', "%{$query}%")
             ->orWhere('name', 'like', "%{$query}%")
             ->limit(5)

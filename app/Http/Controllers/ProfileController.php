@@ -13,8 +13,28 @@ use Illuminate\Support\Facades\Redirect;
 use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+
+use App\Services\AuthenticationLogService;
+use App\Services\ActivityLogService;
+use App\Services\Permission\RoleService;
+
 class ProfileController extends Controller
 {
+    protected AuthenticationLogService $authenticationLogService;
+    protected ActivityLogService $activityLogService;
+    protected RoleService $roleService;
+
+    public function __construct(
+        AuthenticationLogService $authenticationLogService,
+        ActivityLogService $activityLogService,
+        RoleService $roleService
+        
+    ) {
+        $this->authenticationLogService = $authenticationLogService;
+        $this->activityLogService = $activityLogService;
+        $this->roleService = $roleService;
+    }
+
     /**
      * Display the user's profile form.
      */
@@ -22,13 +42,63 @@ class ProfileController extends Controller
     {
         $user = $request->user();
         $breadcrumbs = Breadcrumbs::generate('myProfile', $user);
+
+        $authenticationLogs = $this->authenticationLogService->getAuthenticationLogs($user);
+        // $activityLogs = $this->activityLogService->getActivityLogs($user); // Optional, assuming redundant for now or can be added if needed
+        $roles = $this->roleService->getActiveRoles(); // Needed for User/Show props
+
         $responseData = [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
-            'user' => $user,
+            'user' => $user->load(['roles']),
             'breadcrumbs' => $breadcrumbs,
-            'pageTitle' => __('pageTitle.custom.user.profile')
+            'pageTitle' => __('pageTitle.custom.user.profile'),
+            'authenticationLogs' => $authenticationLogs,
+            'roles' => $roles,
+            // 'activityLogs' => $activityLogs,
         ];
+
+        // If user is a student, include student details
+        if ($user->hasRole('Student')) {
+            $student = \App\Models\Student::with([
+                'hall',
+                'department',
+                'activeAllotment' => function($q) {
+                    $q->with(['seat' => function($sq) {
+                        $sq->with('room');
+                    }]);
+                }
+            ])->where('user_id', $user->id)->first();
+
+            if ($student) {
+                // Get fee records
+                $fees = \App\Models\StudentFee::where('student_id', $student->id)
+                    ->orderByDesc('created_at')
+                    ->get();
+
+                $responseData['studentDetails'] = [
+                    'student' => $student,
+                    'fees' => $fees,
+                ];
+            }
+        }
+
+        // If user is hall provost or house tutor, include assigned halls
+        if ($user->hasRole(['hall provost', 'house tutor'])) {
+            $assignedHalls = $user->halls;
+            // Fetch hall models if needed, but user.halls cast to array in model, need actual objects?
+            // In DashboardService it was used as IDs. In User/Show it expects Name and IsActive.
+            // User model says: 'halls' => 'array'. It contains IDs.
+            // We need to fetch Hall objects.
+
+            if (!empty($user->halls)) {
+                $assignedHallsObjects = \App\Models\Hall::whereIn('id', $user->halls)->get();
+                $responseData['assignedHalls'] = $assignedHallsObjects;
+            } else {
+                 $responseData['assignedHalls'] = [];
+            }
+        }
+
         return Inertia::render('Profile/Edit', $responseData);
     }
 
