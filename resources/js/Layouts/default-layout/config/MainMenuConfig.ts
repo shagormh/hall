@@ -18,8 +18,8 @@ const sidebarMenuConfig: Array<MenuItem> = [
     {
         heading: t('sidebarMenu.admin'),
         route: "/configurations",
-        headingRoutes: ["/configurations", "/roles", "/users", "/permissions", "/companies", "/subscription-plans", "/items"],
-        headingPermissions: ["can-view-configuration", "can-view-role", "can-view-user", "can-view-permission", "can-view-company", "can-view-subscription-plan", "can-view-item"],
+        headingRoutes: ["/configurations", "/roles", "/users", "/permissions", "/companies", "/subscription-plans", "/items", "/fee-configurations"],
+        headingPermissions: ["can-view-configuration", "can-view-role", "can-view-user", "can-view-permission", "can-view-company", "can-view-subscription-plan", "can-view-item", "can-view-fee-configuration"],
         pages: [
             {
                 sectionTitle: t('sidebarMenu.userManagement.menu'),
@@ -54,6 +54,13 @@ const sidebarMenuConfig: Array<MenuItem> = [
                 routePermissions: ["can-view-hall"],
                 // keenthemesIcon: "bank",
                 bootstrapIcon: "bi-building",
+            },
+
+            {
+                heading: 'Fee Configuration',
+                route: "/fee-configurations",
+                routePermissions: ["can-view-fee-configuration"],
+                bootstrapIcon: "bi-gear-fill",
             },
 
         ],

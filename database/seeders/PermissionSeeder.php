@@ -516,6 +516,39 @@ class PermissionSeeder extends Seeder
                 'group_name' => 'Dashboard',
                 'is_active' => true,
             ],
+            // Fee Configuration
+            [
+                'id' => 62,
+                'display_name' => 'ফি কনফিগারেশন দেখা',
+                'name' => 'can-view-fee-configuration',
+                'guard_name' => 'web',
+                'group_name' => 'Fee Configuration Management',
+                'is_active' => true,
+            ],
+            [
+                'id' => 63,
+                'display_name' => 'ফি কনফিগারেশন তৈরী করা',
+                'name' => 'can-create-fee-configuration',
+                'guard_name' => 'web',
+                'group_name' => 'Fee Configuration Management',
+                'is_active' => true,
+            ],
+            [
+                'id' => 64,
+                'display_name' => 'ফি কনফিগারেশন আপডেট করা',
+                'name' => 'can-edit-fee-configuration',
+                'guard_name' => 'web',
+                'group_name' => 'Fee Configuration Management',
+                'is_active' => true,
+            ],
+            [
+                'id' => 65,
+                'display_name' => 'ফি কনফিগারেশন ডিলিট করা',
+                'name' => 'can-delete-fee-configuration',
+                'guard_name' => 'web',
+                'group_name' => 'Fee Configuration Management',
+                'is_active' => true,
+            ],
         ];
 
         foreach ($permissions as $permission) {

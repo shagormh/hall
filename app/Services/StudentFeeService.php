@@ -35,7 +35,7 @@ class StudentFeeService
             'amount' => 900.00,
             'payment_date' => Carbon::createFromFormat('d/m/Y', '02/07/2025')->format('Y-m-d'),
             'fee_details' => 'Hall seat Rent',
-            'suggested_months' => 6, // 900 / 150
+            'suggested_months' => 6, // This is mock, but logic should be: amount / (FeeConfiguration::getFeeAmount($hallId) ?? 150)
         ];
     }
 
@@ -165,7 +165,13 @@ class StudentFeeService
             $startDate = $allotment->allotment_date->startOfMonth();
             $now = now()->startOfMonth();
             $totalMonths = (int) $startDate->diffInMonths($now) + 1; // Including current month
-            $totalFee = $totalMonths * 150;
+            
+            // Get monthly rent for the student's hall
+            $hallId = $allotment->hall_id ?? $student->hall_id;
+            $monthlyRent = \App\Models\FeeConfiguration::getFeeAmount($hallId, 'hall_rent') 
+                ?? \App\Models\FeeConfiguration::getDefaultFeeAmount('hall_rent');
+            
+            $totalFee = $totalMonths * $monthlyRent;
         }
 
         return [

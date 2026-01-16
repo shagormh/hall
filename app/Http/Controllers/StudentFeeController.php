@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use App\Models\StudentFee;
+use App\Models\FeeConfiguration;
 
 class StudentFeeController extends Controller implements HasMiddleware
 {
@@ -186,7 +187,11 @@ class StudentFeeController extends Controller implements HasMiddleware
             }
         }
 
-        $validated['months_count'] = floor($validated['amount'] / 150);
+        // Get the configured monthly rent for the hall
+        $monthlyRent = FeeConfiguration::getFeeAmount($validated['hall_id'], 'hall_rent') 
+            ?? FeeConfiguration::getDefaultFeeAmount('hall_rent');
+
+        $validated['months_count'] = floor($validated['amount'] / $monthlyRent);
         $validated['status'] = 'pending';
 
         $this->feeService->createFee($validated);

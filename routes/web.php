@@ -113,12 +113,13 @@ Route::middleware(Language::class)
         Route::patch('/hall-attachment/{hallAttachment}/change-status', [HallAttachmentController::class, 'changeStatus'])->name('hall-attachments.changeStatus');
 
        // Hall Allotment Routes
+        Route::get('/hall-allotments/check-student-eligibility', [HallAllotmentController::class, 'checkStudentEligibility'])->name('hall-allotments.check-student-eligibility');
+        Route::get('/hall-allotments/available-seats', [HallAllotmentController::class, 'getAvailableSeats'])->name('hall-allotments.available-seats');
         Route::resource('hall-allotments', HallAllotmentController::class);
         Route::post('/hall-allotments/{hallAllotment}/cancel', [HallAllotmentController::class, 'cancel'])->name('hall-allotments.cancel');
         Route::post('/hall-allotments/{hallAllotment}/request-cancel', [HallAllotmentController::class, 'requestCancel'])->name('hall-allotments.request-cancel');
         Route::post('/hall-allotments/{hallAllotment}/approve-cancel', [HallAllotmentController::class, 'approveCancel'])->name('hall-allotments.approve-cancel');
-        Route::get('/hall-allotments/available-seats', [HallAllotmentController::class, 'getAvailableSeats'])->name('hall-allotments.available-seats');
-
+        Route::post('/hall-allotments/{hallAllotment}/approve-cancel', [HallAllotmentController::class, 'approveCancel'])->name('hall-allotments.approve-cancel');
         //Room Type Route
         Route::resource('room-types', RoomTypeController::class);
         Route::patch('/room-types/{roomType}/change-status', [RoomTypeController::class, 'changeStatus'])->name('room-types.changeStatus');
@@ -131,6 +132,9 @@ Route::middleware(Language::class)
         Route::resource('student-fees', \App\Http\Controllers\StudentFeeController::class);
         Route::post('student-fees/parse-voucher', [\App\Http\Controllers\StudentFeeController::class, 'parseVoucher'])->name('student-fees.parse-voucher');
         Route::patch('student-fees/{studentFee}/update-status', [\App\Http\Controllers\StudentFeeController::class, 'updateStatus'])->name('student-fees.update-status');
+
+        // Fee Configuration Routes
+        Route::resource('fee-configurations', \App\Http\Controllers\FeeConfigurationController::class)->except(['create', 'edit']);
     });
 });
 

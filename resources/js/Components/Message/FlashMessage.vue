@@ -4,16 +4,30 @@
 <script setup lang="ts">
 import toastr from 'toastr';
 import 'toastr/toastr.scss';
+import { watch } from 'vue';
+
 const props = defineProps({
     flash: Object,
 })
-if(props.flash && props.flash.success) {
-    toastr.success(props.flash.success)
-    props.flash.success = null;
-} else if (props.flash && props.flash.error){
-    toastr.error(props.flash.error)
-    props.flash.error = null;
+
+// Function to show toast
+const showToast = (flash: any) => {
+    if(flash && flash.success) {
+        toastr.success(flash.success)
+        flash.success = null;
+    } else if (flash && flash.error){
+        toastr.error(flash.error)
+        flash.error = null;
+    }
 }
+
+// Check on mount
+showToast(props.flash);
+
+// Watch for changes (for subsequent requests)
+watch(() => props.flash, (newFlash) => {
+    showToast(newFlash);
+}, { deep: true });
 
 toastr.options = {
   "closeButton": false,

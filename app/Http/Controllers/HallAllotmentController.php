@@ -23,7 +23,7 @@ class HallAllotmentController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:can-view-hall-allotment', only: ['index']),
-            new Middleware('permission:can-create-hall-allotment', only: ['create', 'store']),
+            new Middleware('permission:can-create-hall-allotment', only: ['create', 'store', 'getAvailableSeats', 'checkStudentEligibility']),
             new Middleware('permission:can-edit-hall-allotment', only: ['edit', 'update']),
             new Middleware('permission:can-delete-hall-allotment', only: ['destroy']),
             new Middleware('permission:can-cancel-hall-allotment', only: ['cancel']),
@@ -239,5 +239,26 @@ class HallAllotmentController extends Controller implements HasMiddleware
         );
 
         return response()->json(['seats' => $seats]);
+    }
+
+    /**
+     * ✅ Check if student is eligible for allotment in the selected month
+     */
+    public function checkStudentEligibility(Request $request)
+    {
+        $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'starting_month' => 'required|date'
+        ]);
+
+        try {
+            $this->hallAllotmentService->validateStudentOneAllotmentPerMonth(
+                $request->student_id,
+                $request->starting_month
+            );
+            return response()->json(['eligible' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['eligible' => false, 'message' => $e->getMessage()]);
+        }
     }
 }

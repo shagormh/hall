@@ -303,3 +303,22 @@ Breadcrumbs::for('hallFeeChecker', function (BreadcrumbTrail $trail) {
     $trail->parent('studentFees');
     $trail->push('Fee Checker', route('student-fees.checker'));
 });
+
+// Fee Configuration list
+Breadcrumbs::for('feeConfigurations', function (BreadcrumbTrail $trail) {
+    $trail->parent('dashboard');
+    $trail->push('Fee Configurations', route('fee-configurations.index'));
+});
+
+// Create Fee Configuration
+Breadcrumbs::for('createFeeConfiguration', function (BreadcrumbTrail $trail) {
+    $trail->parent('feeConfigurations');
+    $trail->push('Add', route('fee-configurations.create'));
+});
+
+// Edit Fee Configuration
+Breadcrumbs::for('editFeeConfiguration', function (BreadcrumbTrail $trail, $feeConfiguration) {
+    $trail->parent('feeConfigurations');
+    $trail->push('Edit', route('fee-configurations.edit', $feeConfiguration));
+});
+
