@@ -46,6 +46,8 @@ import LayoutService from "@/Core/services/LayoutService";
 import {initializeComponents, reinitializeComponents} from "@/Core/plugins/keenthemes";
 import KTScrollTop from "@/Layouts/default-layout/components/extras/ScrollTop.vue";
 import FlashMessage from '@/Components/Message/FlashMessage.vue';
+import "sweetalert2/dist/sweetalert2.css";
+import "prism-themes/themes/prism-shades-of-purple.css";
 
 const showingNavigationDropdown = ref(false);
 onBeforeMount(() => {

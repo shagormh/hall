@@ -113,6 +113,7 @@ Route::middleware(Language::class)
         Route::patch('/hall-attachment/{hallAttachment}/change-status', [HallAttachmentController::class, 'changeStatus'])->name('hall-attachments.changeStatus');
 
        // Hall Allotment Routes
+        Route::get('/hall-allotments-report', [HallAllotmentController::class, 'report'])->name('hall-allotments.report');
         Route::get('/hall-allotments/check-student-eligibility', [HallAllotmentController::class, 'checkStudentEligibility'])->name('hall-allotments.check-student-eligibility');
         Route::get('/hall-allotments/available-seats', [HallAllotmentController::class, 'getAvailableSeats'])->name('hall-allotments.available-seats');
         Route::resource('hall-allotments', HallAllotmentController::class);

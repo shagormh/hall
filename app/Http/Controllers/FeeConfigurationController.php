@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Constants;
 use App\Models\FeeConfiguration;
 use App\Models\Hall;
 use App\Services\FeeConfigurationService;
@@ -40,7 +41,7 @@ class FeeConfigurationController extends Controller implements HasMiddleware
         $feeConfigurations = $this->feeConfigurationService->getFeeConfigurations($filters, $user);
 
         // Get halls for filter dropdown and modal
-        $halls = $user->hasRole('super admin') 
+        $halls = $user->hasRole(Constants::ROLE_SUPER_ADMIN) 
             ? Hall::all() 
             : Hall::whereIn('id', $user->halls ?? [])->get();
 
@@ -73,7 +74,7 @@ class FeeConfigurationController extends Controller implements HasMiddleware
         $user = Auth::user();
 
         // Authorization check: ensure user can manage this hall
-        if (!empty($validated['hall_id']) && !$user->hasRole('super admin')) {
+        if (!empty($validated['hall_id']) && !$user->hasRole(Constants::ROLE_SUPER_ADMIN)) {
             $userHallIds = $user->halls ?? [];
             if (!in_array($validated['hall_id'], $userHallIds)) {
                 return redirect()->back()->withErrors(['hall_id' => 'You do not have permission to configure fees for this hall.']);
@@ -102,7 +103,7 @@ class FeeConfigurationController extends Controller implements HasMiddleware
         $user = Auth::user();
 
         // Authorization check
-        if (!empty($validated['hall_id']) && !$user->hasRole('super admin')) {
+        if (!empty($validated['hall_id']) && !$user->hasRole(Constants::ROLE_SUPER_ADMIN)) {
             $userHallIds = $user->halls ?? [];
             if (!in_array($validated['hall_id'], $userHallIds)) {
                 return redirect()->back()->withErrors(['hall_id' => 'You do not have permission to configure fees for this hall.']);
@@ -122,7 +123,7 @@ class FeeConfigurationController extends Controller implements HasMiddleware
         $user = Auth::user();
         
         // Authorization check
-        if ($feeConfiguration->hall_id && !$user->hasRole('super admin')) {
+        if ($feeConfiguration->hall_id && !$user->hasRole(Constants::ROLE_SUPER_ADMIN)) {
             $userHallIds = $user->halls ?? [];
             if (!in_array($feeConfiguration->hall_id, $userHallIds)) {
                 abort(403, 'You do not have permission to delete this fee configuration.');

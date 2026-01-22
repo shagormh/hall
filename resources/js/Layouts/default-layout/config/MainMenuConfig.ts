@@ -128,11 +128,24 @@ const sidebarMenuConfig: Array<MenuItem> = [
             },
 
             {
-                heading: 'Hall Allotment',
+                sectionTitle: 'Hall Allotment',
                 route: "/hall-allotments",
-                routePermissions: ["can-view-hall-allotment"],
-                // keenthemesIcon: "bank",
+                keenthemesIcon: "building-fill-check",
                 bootstrapIcon: "bi-building-fill-check",
+                routeArray: ["/hall-allotments", "/hall-allotments-report"],
+                routePermissions: ["can-view-hall-allotment"],
+                sub: [
+                    {
+                        heading: 'Allotment',
+                        route: "/hall-allotments",
+                        permission: "can-view-hall-allotment",
+                    },
+                    {
+                        heading: 'Allotment Report',
+                        route: "/hall-allotments-report",
+                        permission: "can-view-hall-allotment",
+                    },
+                ],
             },
 
             {

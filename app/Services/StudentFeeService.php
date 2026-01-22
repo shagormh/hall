@@ -132,7 +132,7 @@ class StudentFeeService
             });
         }
 
-        return $query->orderByDesc('created_at')->get();
+        return $query->orderByDesc('created_at')->paginate(20)->withQueryString();
     }
 
     public function updateStatus($feeId, $status, $processorId, $reason = null)

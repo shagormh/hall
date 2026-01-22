@@ -1,5 +1,5 @@
 <template>
-    <AuthenticatedLayout :breadcrumbs="props?.breadcrumbs" :pageTitle="props?.pageTitle">
+    <AuthenticatedLayout :breadcrumbs="breadcrumbs" :pageTitle="pageTitle">
 
         <div class="card">
             <div class="card-header border-0 pt-6">
@@ -7,7 +7,7 @@
                     <!--begin::Search-->
                     <div class="d-flex align-items-center position-relative my-1">
                         <KTIcon icon-name="magnifier" icon-class="fs-1 position-absolute ms-6" />
-                        <input type="text" v-model="search" @input="searchData()" class="form-control form-control-solid w-250px ps-15" placeholder="Search Student" />
+                        <input type="text" v-model="search" class="form-control form-control-solid w-250px ps-15" placeholder="Search Student" />
                     </div>
                     <!--end::Search-->
                 </div>
@@ -33,7 +33,18 @@
             </div>
 
             <div class="card-body pt-0">
-                <Datatable @on-sort="sortData" :data="tableData" :header="tableHeader" :enable-items-per-page-dropdown="true" :checkbox-enabled="false">
+                <Datatable 
+                    @on-sort="sortData" 
+                    @page-change="handlePageChange"
+                    @on-items-per-page-change="handlePerPageChange"
+                    :data="tableData" 
+                    :header="tableHeader" 
+                    :total="students?.total || 0"
+                    :currentPage="students?.current_page || 1"
+                    :itemsPerPage="students?.per_page || 25"
+                    :enable-items-per-page-dropdown="true" 
+                    :checkbox-enabled="false"
+                >
                     <!-- Permission Name -->
                      <template v-slot:roll="{ row: student }">
                         {{ student.roll }}
@@ -100,7 +111,7 @@
 
                     <template v-slot:actions="{ row: student }">
                         <div class="d-flex align-items-center justify-content-end">
-                            <Link v-if="checkPermission('can-edit-student')" :href="route('students.edit', student.id)" class="btn btn-icon btn-flex btn-active-light-primary w-30px h-30px" data-bs-toggle="tooltip" :title="$t('tooltip.title.edit')">
+                            <Link v-if="checkPermission('can-edit-student')" :href="route('students.edit', student.id)" class="btn btn-icon btn-flex btn-active-light-primary w-30px h-30px" data-bs-toggle="tooltip" :title="t('tooltip.title.edit')">
                                 <KTIcon icon-name="pencil" icon-class="fs-3 text-primary" />
                             </Link>
                             <!-- Delete -->
@@ -137,12 +148,12 @@
 
 <script setup lang="ts">
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { ref, onMounted,defineProps } from 'vue';
 import Datatable from "@/Components/kt-datatable/KTDataTable.vue";
 import type { Sort } from "@/Components/kt-datatable/table-partials/Models";
 import { MenuComponent } from "@/Assets/ts/components";
 import arraySort from "array-sort";
 import { Link, router } from '@inertiajs/vue3';
+import { ref, watch, computed } from 'vue';
 import KTIcon from "@/Core/helpers/kt-icon/KTIcon.vue";
 import { checkPermission } from "@/Core/helpers/Permission";
 import i18n from '@/Core/plugins/i18n';
@@ -150,13 +161,19 @@ import ChangeStatusButton from '@/Components/Button/ChangeStatusButton.vue';
 import DeleteConfirmationButton from '@/Components/Button/DeleteConfirmationButton.vue';
 
 const { t } = i18n.global;
+const route = (window as any).route;
 
-const props = defineProps({
-    students: Object as() => IStudent[] | undefined,
-    departments: Object,
-    breadcrumbs: Array as() => Breadcrumb[],
-    pageTitle: String,
-});
+const props = defineProps<{
+    students: any;
+    departments: any[];
+    filters: any;
+    breadcrumbs: Breadcrumb[];
+    pageTitle: string;
+}>();
+
+const selectedStudent = ref < any > (null);
+const blockReason = ref < string > ('');
+const showBlockModal = ref < boolean > (false);
 
 interface Breadcrumb {
     url: string;
@@ -247,48 +264,66 @@ const tableHeader = ref([
     },
 ]);
 
-const tableData = ref < IStudent[] > ([]);
-const initStudents = ref < IStudent[] > ([]);
-const selectedStudent = ref < any > (null);
-const blockReason = ref < string > ('');
-const showBlockModal = ref < boolean > (false);
-
-onMounted(() => {
-    if (props.students) {
-        initStudents.value = props.students.map((student: any) => ({
+const tableData = computed(() => {
+    if (props.students?.data) {
+        return props.students.data.map((student: any) => ({
             id: student.id,
             roll: student.roll,
             registration: student.registration,
             name: student.name,
-            department: props.departments?.find((dept: any) => dept.id === student.department_id)?.name,
+            department: (props.departments?.find((dept: any) => dept.id === student.department_id) as any)?.name,
             email: student.email,
             father_name: student.father_name,
             mother_name: student.mother_name,
             hall_status: student.hall_status,
             address: student.address,
             mobile_number: student.mobile_number,
-            is_active: student.is_active,
+            is_active: !!student.is_active,
         }));
-        tableData.value = initStudents.value;
     }
-});const search = ref < string > ("");
-const searchData = () => {
-    tableData.value = [...initStudents.value];
-    if (search.value !== "") {
-        tableData.value = tableData.value.filter(item => searchingFunc(item, search.value));
-    }
-    MenuComponent.reinitialization();
+    return [];
+});
+
+const search = ref(props.filters?.search || '');
+const perPage = ref(props.students?.per_page || 25);
+
+// Simple native debounce function
+function debounce(fn: any, delay: number) {
+    let timeout: any;
+    return (...args: any[]) => {
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(() => fn(...args), delay);
+    };
+}
+
+const updateFilters = debounce(() => {
+    router.get(route('students.index'), {
+        page: 1,
+        search: search.value,
+        per_page: perPage.value
+    }, {
+        preserveState: true,
+        replace: true,
+    });
+}, 300);
+
+watch([search, perPage], () => {
+    updateFilters();
+});
+
+const handlePageChange = (page: number) => {
+    router.get(route('students.index'), {
+        page: page,
+        search: search.value,
+        per_page: perPage.value
+    }, {
+        preserveState: true,
+        replace: true,
+    });
 };
 
-const searchingFunc = (obj: any, value: string): boolean => {
-    for (let key in obj) {
-        if (!Number.isInteger(obj[key]) && !(typeof obj[key] === "object")) {
-            if (obj[key] && obj[key].includes && obj[key].includes(value)) {
-                return true;
-            }
-        }
-    }
-    return false;
+const handlePerPageChange = (val: number) => {
+    perPage.value = val;
 };
 
 const sortData = (sort: Sort) => {
@@ -306,19 +341,15 @@ const toggleStudentStatus = (student: IStudent) => {
         selectedStudent.value = student;
         blockReason.value = '';
         showBlockModal.value = true;
-    } else {
         // If turning on, use the new status endpoint
         router.patch(route('students.status', student.id), {
-            is_active: true
-        });
-        router.get(route('students.blockList'), {
             is_active: true
         }, {
             preserveScroll: true,
             preserveState: true,
             onSuccess: (page) => {
                 // Success message automatically handled by Inertia flash
-                const index = tableData.value.findIndex(s => s.id === student.id);
+                const index = tableData.value.findIndex((s: any) => s.id === student.id);
                 if (index !== -1) {
                     tableData.value[index].is_active = true;
                 }
@@ -326,7 +357,6 @@ const toggleStudentStatus = (student: IStudent) => {
             },
             onError: (errors) => {
                 console.error('Error activating student:', errors);
-                alert('Failed to activate student.');
             }
         });
 
@@ -349,7 +379,7 @@ const confirmBlockStudent = () => {
             showBlockModal.value = false;
 
             // Update table data locally
-            const index = tableData.value.findIndex(s => s.id === selectedStudent.value.id);
+            const index = tableData.value.findIndex((s: any) => s.id === selectedStudent.value.id);
             if (index !== -1) {
                 tableData.value[index].is_active = false;
 

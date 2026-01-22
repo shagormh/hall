@@ -221,11 +221,17 @@
 </template>
 
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import "dropzone/dist/dropzone.css";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import KTIcon from "@/Core/helpers/kt-icon/KTIcon.vue";
 import { ref, computed, watch } from 'vue';
+import i18n from '@/Core/plugins/i18n';
+import "sweetalert2/dist/sweetalert2.css";
 import axios from 'axios';
+
+const trans = (key) => i18n.global.t(key);
+const route = (window).route;
 
 const props = defineProps({
     students: Array,

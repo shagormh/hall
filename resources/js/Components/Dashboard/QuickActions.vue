@@ -1,47 +1,49 @@
 <template>
-    <div class="bg-green-400 rounded-lg shadow-sm p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+    <div class="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
+        <div class="flex items-center gap-3 mb-6">
+            <i class="bi-lightning-charge text-gray-600" style="font-size: 1.5rem;"></i>
+            <div class="flex flex-col">
+                <h3 class="text-2xl font-black text-gray-900 leading-none">Quick Actions</h3>
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Common tasks</span>
+            </div>
+        </div>
 
-        <div class="grid grid-cols-1 gap-3">
+        <div class="grid grid-cols-2 gap-4">
             <button
                 v-if="hasPermission('students.create')"
                 @click="navigateTo('students.create')"
-                class="flex items-center p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-black rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md">
-                <i class="bi-person-plus-fill text-2xl mr-3"></i>
-                <span class="font-medium">Add New Student</span>
+                class="flex flex-col items-center justify-center p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                style="background: linear-gradient(to bottom right, #3b82f6, #0ea5e9);">
+                <i class="bi-person-plus text-3xl mb-2 text-white group-hover:scale-110 transition-transform"></i>
+                <span class="text-xs font-black uppercase tracking-wider text-center text-white">Add Student</span>
             </button>
 
             <button
                 v-if="hasPermission('hall-allotments.create')"
                 @click="navigateTo('hall-allotments.create')"
-                class="flex items-center p-4 bg-gradient-to-r from-green-500 to-green-600 text-black rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-sm hover:shadow-md">
-                <i class="bi-house-add-fill text-2xl mr-3"></i>
-                <span class="font-medium">Allot Seat</span>
+                class="flex flex-col items-center justify-center p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                style="background: linear-gradient(to bottom right, #10b981, #059669);">
+                <i class="bi-house-add text-3xl mb-2 text-white group-hover:scale-110 transition-transform"></i>
+                <span class="text-xs font-black uppercase tracking-wider text-center text-white">Allocate Seat</span>
             </button>
 
             <button
                 v-if="hasPermission('hall-allotments.index')"
                 @click="navigateTo('hall-allotments.index')"
-                class="flex items-center p-4 bg-gradient-to-r from-purple-500 to-purple-600 text-black rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-sm hover:shadow-md">
-                <i class="bi-list-ul text-2xl mr-3"></i>
-                <span class="font-medium">View All Allotments</span>
+                class="flex flex-col items-center justify-center p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                style="background: linear-gradient(to bottom right, #8b5cf6, #7c3aed);">
+                <i class="bi-clipboard-check text-3xl mb-2 text-white group-hover:scale-110 transition-transform"></i>
+                <span class="text-xs font-black uppercase tracking-wider text-center text-white">Manage</span>
             </button>
 
             <button
-                v-if="hasPermission('students.index')"
-                @click="navigateTo('students.blockList')"
-                class="flex items-center p-4 bg-gradient-to-r from-orange-500 to-orange-600 text-black rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-sm hover:shadow-md">
-                <i class="bi-shield-fill-exclamation text-2xl mr-3"></i>
-                <span class="font-medium">Blocked Students</span>
+                v-if="hasPermission('reports.index')"
+                @click="navigateTo('reports.index')"
+                class="flex flex-col items-center justify-center p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                style="background: linear-gradient(to bottom right, #f97316, #ea580c);">
+                <i class="bi-file-earmark-bar-graph text-3xl mb-2 text-white group-hover:scale-110 transition-transform"></i>
+                <span class="text-xs font-black uppercase tracking-wider text-center text-white">Reports</span>
             </button>
-
-            <!-- <button
-                v-if="hasPermission('rooms.index')"
-                @click="navigateTo('rooms.index')"
-                class="flex items-center p-4 bg-gradient-to-r from-indigo-500 to-indigo-600 text-black rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md">
-                <i class="bi-door-open-fill text-2xl mr-3"></i>
-                <span class="font-medium">Manage Rooms</span>
-            </button> -->
         </div>
     </div>
 </template>

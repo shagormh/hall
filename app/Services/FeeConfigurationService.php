@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Constants\Constants;
 use App\Models\FeeConfiguration;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,7 +24,7 @@ class FeeConfigurationService
         $query = FeeConfiguration::with(['hall', 'creator', 'updater']);
 
         // Filter by hall for non-super-admins
-        if (!$user->hasRole('super admin')) {
+        if (!$user->hasRole(Constants::ROLE_SUPER_ADMIN)) {
             $hallIds = $user->halls ?? []; // Halls is already an array of IDs
             $query->whereIn('hall_id', $hallIds);
         }

@@ -30,30 +30,27 @@
                     <!--begin::Toolbar-->
                     <div class="d-flex justify-content-end gap-3 flex-wrap" data-kt-user-table-toolbar="base">
                         <!--begin::Hall Filter-->
-                        <div class="w-150px">
-                            <select
+                        <!-- <div class="w-200px">
+                             <Multiselect
                                 v-model="hallId"
-                                class="form-select form-select-solid"
-                                data-control="select2"
-                                data-placeholder="Select Hall"
-                            >
-                                <option value="">All Halls</option>
-                                <option v-for="hall in halls" :key="hall.id" :value="hall.id">{{ hall.name }}</option>
-                            </select>
-                        </div>
+                                :options="halls"
+                                label="name"
+                                value-prop="id"
+                                placeholder="All Halls"
+                                :searchable="true"
+                                class="form-select-solid"
+                            />
+                        </div> -->
                         <!--end::Hall Filter-->
 
                         <!--begin::Status Filter-->
                         <div class="w-150px">
-                            <select
+                             <Multiselect
                                 v-model="status"
-                                class="form-select form-select-solid"
-                            >
-                                <option value="">All Status</option>
-                                <option value="pending">Pending</option>
-                                <option value="approved">Approved</option>
-                                <option value="rejected">Rejected</option>
-                            </select>
+                                :options="['pending', 'approved', 'rejected']"
+                                placeholder="All Status"
+                                class="form-select-solid"
+                            />
                         </div>
                         <!--end::Status Filter-->
 
@@ -86,16 +83,19 @@
                             </tr>
                         </thead>
                         <tbody class="text-gray-600 fw-semibold">
-                            <tr v-for="fee in fees" :key="fee.id">
+                            <tr v-for="fee in fees.data" :key="fee.id">
                                 <td class="d-flex align-items-center">
                                     <div class="d-flex flex-column">
                                         <span class="text-gray-800 text-hover-primary mb-1 fw-bold">{{ fee.student?.name }}</span>
                                         <span class="fs-7 text-muted">{{ fee.student?.roll }}</span>
                                         <span class="fs-8 text-primary opacity-50">{{ fee.student?.registration }}</span>
-                                        <span v-if="fee.student?.active_allotment?.seat?.room && fee.student?.active_allotment?.seat?.seat_label" 
-                                              class="fs-8 text-warning badge badge-light-warning mt-1">
-                                            Room: {{ fee.student.active_allotment.seat.room.room_number }}-{{ fee.student.active_allotment.seat.seat_label }}
-                                        </span>
+                                        <div class="d-flex flex-column gap-1 mt-1">
+                                            <span class="badge badge-light-info fw-bold fs-8 w-auto me-auto">{{ fee.hall?.name }}</span>
+                                            <span v-if="fee.student?.active_allotment?.seat?.room && fee.student?.active_allotment?.seat?.seat_label" 
+                                                class="fs-8 text-dark fw-bold badge badge-light-warning w-auto me-auto">
+                                                Room: {{ fee.student.active_allotment.seat.room.room_number }}-{{ fee.student.active_allotment.seat.seat_label }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </td>
                                 <td>
@@ -128,7 +128,7 @@
                                     <span v-else class="text-muted fs-7 italic">Processed</span>
                                 </td>
                             </tr>
-                            <tr v-if="fees.length === 0">
+                            <tr v-if="fees.data.length === 0">
                                 <td colspan="6" class="text-center py-20 px-4">
                                     <div class="d-flex flex-column align-items-center justify-content-center mx-auto" style="max-width: 400px;">
                                         <KTIcon icon-name="search-list" icon-class="fs-5tx text-gray-200 mb-5" />
@@ -143,6 +143,22 @@
                 <!--end::Table-->
             </div>
             <!--end::Card body-->
+            <div class="card-footer py-4" v-if="fees.total > 0">
+                <div class="row">
+                    <div class="col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start">
+                        <div class="text-gray-600 fw-semibold fs-7">
+                            Showing {{ fees.from }} to {{ fees.to }} of {{ fees.total }} entries
+                        </div>
+                    </div>
+                    <TablePagination
+                        :totalPages="fees.last_page"
+                        :total="fees.total"
+                        :perPage="fees.per_page"
+                        :currentPage="fees.current_page"
+                        @page-change="handlePageChange"
+                    />
+                </div>
+            </div>
         </div>
         <!--end::Card-->
 
@@ -186,10 +202,12 @@
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import KTIcon from "@/Core/helpers/kt-icon/KTIcon.vue";
-import { ref, watch } from 'vue';
+import TablePagination from "@/Components/kt-datatable/table-partials/table-content/table-footer/TablePagination.vue";
+import { ref, watch, computed } from 'vue';
+import Multiselect from '@vueform/multiselect';
 
 const props = defineProps({
-    fees: Array,
+    fees: Object,
     halls: Array,
     filters: Object,
     breadcrumbs: Array,
@@ -198,8 +216,8 @@ const props = defineProps({
 });
 
 const search = ref(props.filters.search || '');
-const hallId = ref(props.filters.hall_id || '');
-const status = ref(props.filters.status || '');
+const hallId = ref(props.filters.hall_id ? Number(props.filters.hall_id) : null);
+const status = ref(props.filters.status || null);
 
 // Simple native debounce function
 function debounce(fn, delay) {
@@ -211,7 +229,8 @@ function debounce(fn, delay) {
 }
 
 const updateFilters = debounce(() => {
-    router.get(route('student-fees.index'), { 
+    router.get(route('student-fees.index'), {
+        page: 1,
         search: search.value,
         hall_id: hallId.value,
         status: status.value
@@ -220,6 +239,18 @@ const updateFilters = debounce(() => {
         replace: true,
     });
 }, 300);
+
+const handlePageChange = (page) => {
+    router.get(route('student-fees.index'), {
+        page: page,
+        search: search.value,
+        hall_id: hallId.value,
+        status: status.value
+    }, {
+        preserveState: true,
+        replace: true,
+    });
+};
 
 watch([search, hallId, status], () => {
     updateFilters();

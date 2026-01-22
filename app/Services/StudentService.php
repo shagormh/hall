@@ -35,6 +35,26 @@ class StudentService extends BaseModelService
             ->get();
     }
 
+    public function getPaginatedStudents($params = [])
+    {
+        $query = $this->model()::whereHas('department', function($query) {
+                $query->where('is_active', true);
+            })
+            ->orderByDesc('created_at');
+            
+        if (isset($params['search']) && $params['search']) {
+            $search = $params['search'];
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('roll', 'like', "%{$search}%")
+                  ->orWhere('registration', 'like', "%{$search}%")
+                  ->orWhere('mobile_number', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->paginate($params['per_page'] ?? 25)->withQueryString();
+    }
+
     public function getStudentsWithOutAttachOrAllotment()
     {
         return $this->model()::where('hall_status', null)

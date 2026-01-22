@@ -175,7 +175,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted } from "vue";
+import { defineComponent, ref, onMounted, computed } from "vue";
+import { usePage } from "@inertiajs/vue3";
 import MainMenuConfig from "@/Layouts/default-layout/config/MainMenuConfig";
 import KTIcon from "@/Core/helpers/kt-icon/KTIcon.vue";
 
@@ -200,14 +201,15 @@ export default defineComponent({
       return routes.some((route) => url.indexOf(route) !== -1);
     };
 
-    const allPermissions = JSON.parse(localStorage.getItem("permissions") || "[]");
+    const page = usePage();
+    const allPermissions = computed(() => (page.props.auth as any).permissions || []);
 
     const checkRoutePermission = (routePermission: any) =>
-      allPermissions.some((el: any) => el.name === routePermission);
+      allPermissions.value.some((el: any) => el.name === routePermission);
 
     const checkMenuPermission = (menuPermissions: any) => {
       if (!menuPermissions) return true;
-      return allPermissions.some((el: any) =>
+      return allPermissions.value.some((el: any) =>
         menuPermissions.some((mp: any) => el.name === mp)
       );
     };

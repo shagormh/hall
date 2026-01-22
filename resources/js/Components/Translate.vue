@@ -73,9 +73,11 @@ onMounted(async () => {
         languages.value = JSON.parse(storedLanguages);
     } else {
         const response = await getLanguages();
-        const { languageOptions } = response.data?.data;
-        languages.value = languageOptions;
-        localStorage.setItem('languages', JSON.stringify(languageOptions));
+        if (response?.data?.data) {
+            const { languageOptions } = response.data.data;
+            languages.value = languageOptions;
+            localStorage.setItem('languages', JSON.stringify(languageOptions));
+        }
     }
 });
 </script>

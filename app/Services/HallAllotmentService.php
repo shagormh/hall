@@ -37,7 +37,7 @@ class HallAllotmentService extends BaseModelService
             $startingMonth = $data['starting_month'];
 
             // Check if seat is available for the selected starting month
-            $this->validateSeatAvailability($data['seat_id'], $startingMonth);
+            $this->validateSeatAvailability($data['seat_id'], $startingMonth, $data['hall_id']);
             
             // ✅ Check student eligibility (no same-month re-allotment)
             $this->validateStudentOneAllotmentPerMonth($data['student_id'], $startingMonth);
@@ -66,7 +66,7 @@ class HallAllotmentService extends BaseModelService
     {
         return DB::transaction(function () use ($hallAllotment, $data) {
             if ($data['seat_id'] != $hallAllotment->seat_id) {
-                $this->validateSeatAvailability($data['seat_id'], $data['starting_month']);
+                $this->validateSeatAvailability($data['seat_id'], $data['starting_month'], $data['hall_id']);
                 // Also validate student if moving to a new seat (though strictly they are just moving)
                 // But if they are just editing, maybe strict month rule applies? 
                 // Let's assume on Edit, we mainly care about Seat Availability.
@@ -217,16 +217,21 @@ class HallAllotmentService extends BaseModelService
         });
     }
 
-    public function validateSeatAvailability($seatId, $startingMonth)
+    public function validateSeatAvailability($seatId, $startingMonth, $hallId = null)
     {
-        $conflictingAllotment = HallAllotment::where('seat_id', $seatId)
+        $query = HallAllotment::where('seat_id', $seatId)
             ->where('status', 'active')
             ->where('starting_month', '<=', $startingMonth)
             ->where(function($query) use ($startingMonth) {
                 $query->where('ending_month', '>=', $startingMonth)
                       ->orWhereNull('ending_month');
-            })
-            ->exists();
+            });
+
+        if ($hallId) {
+            $query->where('hall_id', $hallId);
+        }
+
+        $conflictingAllotment = $query->exists();
 
         if ($conflictingAllotment) {
             throw new \Exception('Seat is not available for the selected starting month.');
@@ -254,11 +259,15 @@ class HallAllotmentService extends BaseModelService
                             ->whereIn('status', \App\Constants\AllotmentStatus::active());
                       });
             })
-            ->exists();
+            ->first();
 
         if ($conflict) {
-            // "This student has a seat cancelled/active this month. Cannot allot new seat this month."
-            throw new \Exception('এই ছাত্রের এই মাসে সিট বাতিল করা হয়েছে। বা সিট বরাদ্দ আছে, এই মাসে নতুন সিট বরাদ্দ দেওয়া যাবে না।');
+            if ($conflict->ending_month) {
+                $monthYear = Carbon::parse($conflict->ending_month)->format('F Y');
+                throw new \Exception("এই ছাত্রের {$monthYear} পর্যন্ত সিট বরাদ্দ বা বাতিল করা আছে। একই মাসে নতুন সিট দেওয়া যাবে না।");
+            } else {
+                throw new \Exception('এই ছাত্রের বর্তমানে একটি সিট বরাদ্দ আছে। নতুন সিট বরাদ্দ দেওয়া যাবে না।');
+            }
         }
     }
 
@@ -362,5 +371,89 @@ class HallAllotmentService extends BaseModelService
             ->whereIn('hall_id', $hallIds)
             ->where('status', 'cancel_requested')
             ->get();
+    }
+
+    // ✅ NEW: Get filtered allotments for report
+    public function getFilteredAllotments(array $params)
+    {
+        $user = Auth::user();
+        $hallIds = $user->halls;
+
+        $query = $this->model()::with(['student', 'hall', 'seat'])
+            ->whereIn('hall_id', $hallIds)
+            ->where('status', 'active');
+
+        // Filter by ID Range
+        if (!empty($params['id_from'])) {
+            $query->where('id', '>=', $params['id_from']);
+        }
+        if (!empty($params['id_to'])) {
+            $query->where('id', '<=', $params['id_to']);
+        }
+
+        // Filter by Status
+        if (!empty($params['status'])) {
+            $query->where('status', $params['status']);
+        }
+
+        // Filter by Specific Month (Active during that month)
+        if (!empty($params['year']) && !empty($params['month'])) {
+            $date = Carbon::parse($params['year'] . '-' . $params['month'] . '-01');
+            $startOfMonth = $date->copy()->startOfMonth();
+            $endOfMonth = $date->copy()->endOfMonth();
+
+            $query->where('starting_month', '<=', $endOfMonth->format('Y-m-d'))
+                ->where(function ($q) use ($startOfMonth) {
+                    $q->where('ending_month', '>=', $startOfMonth->format('Y-m-d'))
+                        ->orWhereNull('ending_month');
+                });
+        } elseif (!empty($params['selected_month'])) {
+            // Keep supporting the old format just in case
+            $date = Carbon::parse($params['selected_month'] . '-01');
+            $startOfMonth = $date->copy()->startOfMonth();
+            $endOfMonth = $date->copy()->endOfMonth();
+
+            $query->where('starting_month', '<=', $endOfMonth->format('Y-m-d'))
+                ->where(function ($q) use ($startOfMonth) {
+                    $q->where('ending_month', '>=', $startOfMonth->format('Y-m-d'))
+                        ->orWhereNull('ending_month');
+                });
+        }
+
+        // Filter by Type
+        if (!empty($params['filter_type'])) {
+            $today = Carbon::today();
+            $startOfMonth = Carbon::now()->startOfMonth();
+            $endOfMonth = Carbon::now()->endOfMonth();
+
+            switch ($params['filter_type']) {
+                case 'today_created':
+                    $query->whereDate('created_at', $today);
+                    break;
+                case 'active_this_month':
+                    $query->where('status', 'active')
+                        ->where('starting_month', '<=', $endOfMonth->format('Y-m-d'))
+                        ->where(function($q) use ($startOfMonth) {
+                            $q->where('ending_month', '>=', $startOfMonth->format('Y-m-d'))
+                              ->orWhereNull('ending_month');
+                        });
+                    break;
+                case 'active_today':
+                    $query->where('status', 'active')
+                        ->where('starting_month', '<=', $today->format('Y-m-d'))
+                        ->where(function($q) use ($today) {
+                            $q->where('ending_month', '>=', $today->format('Y-m-d'))
+                              ->orWhereNull('ending_month');
+                        });
+                    break;
+            }
+        }
+
+        // Filter by Date Range (Custom)
+        if (!empty($params['start_date']) && !empty($params['end_date'])) {
+            $query->whereBetween('allotment_date', [$params['start_date'], $params['end_date']]);
+        }
+
+        return $query->orderBy('id', 'desc')->get();
     }
 }

@@ -14,7 +14,7 @@ class AuthService extends BaseModelService
 
     public function adminLogin($validatedData)
     {
-        if(Auth::attempt(['email' => $validatedData['email'], 'password' => $validatedData['password']])) {
+        if(Auth::attempt(['email' => $validatedData['email'], 'password' => $validatedData['password'], 'is_active' => 1])) {
             $user = Auth::user();
             $token =  $user->createToken('admin-auth-token')->plainTextToken;
             return $token;

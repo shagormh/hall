@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Constants;
 use App\Services\StudentFeeService;
 use App\Services\HallService;
 use App\Services\StudentService;
@@ -88,8 +89,30 @@ class StudentFeeController extends Controller implements HasMiddleware
 
         // Scoping for Provosts (overwrites request hall_id if not super admin)
         $user = Auth::user();
-        if (!$user->hasRole('super admin')) {
-            $params['hall_id'] = $user->halls;
+        if (!$user->hasRole(Constants::ROLE_SUPER_ADMIN)) {
+            $userHalls = $user->halls ?? [];
+            $requestedHallId = $params['hall_id'];
+
+            // Normalize for comparison
+            $allowedHalls = array_map('strval', is_array($userHalls) ? $userHalls : []);
+            $requestedCheck = strval($requestedHallId);
+
+            Log::info('Fee Filter Debug:', [
+                'user_id' => $user->id,
+                'user_halls_raw' => $userHalls,
+                'allowed_halls_normalized' => $allowedHalls,
+                'requested_hall_id' => $requestedHallId,
+                'requested_check' => $requestedCheck,
+                'match_found' => in_array($requestedCheck, $allowedHalls),
+            ]);
+
+            // If user selected a specific hall and they have permission for it, use it
+            if ($requestedHallId && in_array($requestedCheck, $allowedHalls)) {
+                $params['hall_id'] = $requestedHallId;
+            } else {
+                // Otherwise show all their halls
+                $params['hall_id'] = $userHalls;
+            }
         }
 
         $fees = $this->feeService->getAllFees($params);

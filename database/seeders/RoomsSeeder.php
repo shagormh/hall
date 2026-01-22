@@ -19,16 +19,35 @@ class RoomsSeeder extends Seeder
         $rooms = [];
         $seats = [];
 
-        // Floors 2 to 10 → 201–236, 301–336, ..., 1001–1036
-        for ($floor = 2; $floor <= 10; $floor++) {
-            $start = $floor * 100 + 1;   // 201, 301, ...
-            $end   = $floor * 100 + 36;  // 236, 336, ...
+        // Agnibeena Hall (ID: 1)
+        // Floors 1 to 5 → 101–136, ..., 501–536
+        for ($floor = 1; $floor <= 5; $floor++) {
+            $start = $floor * 100 + 1;   // 101, 201, ...
+            $end   = $floor * 100 + 36;  // 136, 236, ...
 
             for ($roomNumber = $start; $roomNumber <= $end; $roomNumber++) {
 
                 // Prepare room data
                 $rooms[] = [
-                    'hall_id'      => 3,
+                    'hall_id'      => 1, // Agnibeena Hall
+                    'room_type_id' => null,
+                    'room_number'  => $roomNumber,
+                    'capacity'     => 4,
+                    'created_at'   => Carbon::now(),
+                    'updated_at'   => Carbon::now(),
+                ];
+            }
+        }
+
+        // Bidrohi Hall (ID: 3)
+        // Floors 2 to 10 → 201–236, ..., 1001–1036
+        for ($floor = 2; $floor <= 10; $floor++) {
+            $start = $floor * 100 + 1;
+            $end   = $floor * 100 + 36;
+
+            for ($roomNumber = $start; $roomNumber <= $end; $roomNumber++) {
+                $rooms[] = [
+                    'hall_id'      => 3, // Bidrohi Hall
                     'room_type_id' => null,
                     'room_number'  => $roomNumber,
                     'capacity'     => 4,

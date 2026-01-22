@@ -261,4 +261,23 @@ class HallAllotmentController extends Controller implements HasMiddleware
             return response()->json(['eligible' => false, 'message' => $e->getMessage()]);
         }
     }
+
+    /**
+     * ✅ NEW: Display the allotment report page
+     */
+    public function report(Request $request)
+    {
+        $breadcrumbs = Breadcrumbs::generate('hallAllotments');
+        
+        $params = $request->only(['id_from', 'id_to', 'status', 'filter_type', 'start_date', 'end_date', 'year', 'month']);
+        
+        $hallAllotments = $this->hallAllotmentService->getFilteredAllotments($params);
+
+        return Inertia::render('HallAllotment/Report', [
+            'hallAllotments' => $hallAllotments,
+            'filters' => $params,
+            'breadcrumbs' => $breadcrumbs,
+            'pageTitle' => 'Hall Allotment Report',
+        ]);
+    }
 }

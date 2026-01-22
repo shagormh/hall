@@ -42,7 +42,7 @@
                                 <div class="text-center mb-11">
                                     <img alt="Logo" :src="getAssetPath('/media/logos/jkkniu-logo.png')"
                                         class="h-60px h-lg-75px"/>
-                                    <h1 class="text-gray-900 fw-bolder mb-3">{{ $t('auth.login.title') }}</h1>
+                                    <h1 class="text-gray-900 fw-bolder mb-3">{{ t('auth.login.title') }}</h1>
                                 </div>
                                 <!--begin::Heading-->
 
@@ -65,15 +65,15 @@
                                 <!--Forgot Password-->
                                 <div class="d-flex flex-stack flex-wrap gap-3 fs-base fw-semibold mb-8">
                                     <div></div>
-                                    <Link :href="''" class="link-primary">
-                                        {{ $t('auth.login.forgotPassword') }} ?
-                                    </Link>
+                                    <!-- <Link :href="''" class="link-primary">
+                                        {{ t('auth.login.forgotPassword') }} ?
+                                    </Link> -->
                                 </div>
 
                                 <!--begin::Submit button-->
                                 <div class="d-grid mb-10">
                                     <!-- Submit Button-->
-                                    <SubmitButton :buttonValue="$t('buttonValue.signIn')" class="btn btn-lg w-100 mb-5"/>
+                                    <SubmitButton :buttonValue="t('buttonValue.signIn')" class="btn btn-lg w-100 mb-5"/>
                                 </div>
                                 <!--end::Submit button-->
                             </VForm>
@@ -125,9 +125,9 @@
                         <div class="d-flex flex-center">
                             <!-- Links -->
                             <div class="d-flex fw-semibold text-primary fs-base gap-5">
-                                <Link :href="''" target="_blank">{{ $t('links.footer.terms') }}</Link>
-                                <Link :href="''" target="_blank">{{ $t('links.footer.plans') }}</Link>
-                                <Link :href="''" target="_blank">{{ $t('links.footer.contactUs') }}</Link>
+                                <Link :href="''" target="_blank">{{ t('links.footer.terms') }}</Link>
+                                <Link :href="''" target="_blank">{{ t('links.footer.plans') }}</Link>
+                                <Link :href="''" target="_blank">{{ t('links.footer.contactUs') }}</Link>
                             </div>
                         </div>
                         <!--end::Footer-->
@@ -158,8 +158,10 @@ import SubmitButton from "@/Components/Button/SubmitButton.vue";
 import {Link, useForm} from "@inertiajs/vue3"
 import Swal from "sweetalert2/dist/sweetalert2.js";
 import i18n from '@/Core/plugins/i18n';
+import "sweetalert2/dist/sweetalert2.css";
 
-const { t } = i18n.global;
+const t = (key: string) => i18n.global.t(key);
+const route: any = (window as any).route;
 
 const props = defineProps({
     pageTitle: String

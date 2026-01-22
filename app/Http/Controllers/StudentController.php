@@ -43,14 +43,15 @@ class StudentController extends Controller implements HasMiddleware
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
         $breadcrumbs = Breadcrumbs::generate('studentList');
-        $students = $this->studentService->getStudents();
+        $students = $this->studentService->getPaginatedStudents($request->all());
         $departments = $this->departmentService->getDepartments();
         $responseData = [
             'students' => $students,
             'departments' => $departments,
+            'filters' => $request->only(['search', 'per_page']),
             'breadcrumbs' => $breadcrumbs,
             'pageTitle' => 'Students',
         ];
@@ -138,7 +139,7 @@ class StudentController extends Controller implements HasMiddleware
             $message = 'Student updated successfully.';
 
             // If it's an AJAX request (from your Vue component), return JSON
-            if ($request->expectsJson() || $request->ajax()) {
+            if (($request->expectsJson() || $request->ajax()) && !$request->header('X-Inertia')) {
                 return response()->json([
                     'success' => true,
                     'message' => $message,
@@ -153,7 +154,7 @@ class StudentController extends Controller implements HasMiddleware
             $message = 'Failed to update student: ' . $e->getMessage();
 
             // If it's an AJAX request, return JSON error
-            if ($request->expectsJson() || $request->ajax()) {
+            if (($request->expectsJson() || $request->ajax()) && !$request->header('X-Inertia')) {
                 return response()->json([
                     'success' => false,
                     'message' => $message

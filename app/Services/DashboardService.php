@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Constants\Constants;
 use App\Models\Hall;
 use App\Models\HallAllotment;
 use App\Models\Room;
@@ -17,64 +18,77 @@ class DashboardService
     /**
      * Get statistics for dashboard cards
      */
-    public function getStatistics()
+    public function getStatistics($hallId = null)
     {
         $user = Auth::user();
         // halls is already an array of IDs, not a relationship
         $hallIds = collect($user->halls ?? []);
         
         // For admin: all data, For provost: only their hall data
-        $isAdmin = $user->hasRole('super-admin');
+        $isAdmin = $user->hasRole(Constants::ROLE_SUPER_ADMIN);
         
         return [
-            'students' => $this->getStudentStatistics($hallIds, $isAdmin),
-            'seats' => $this->getSeatStatistics($hallIds, $isAdmin),
-            'halls' => $this->getHallStatistics($isAdmin),
-            'rooms' => $this->getRoomStatistics($hallIds, $isAdmin),
+            'students' => $this->getStudentStatistics($hallIds, $isAdmin, $hallId),
+            'seats' => $this->getSeatStatistics($hallIds, $isAdmin, $hallId),
+            'halls' => $this->getHallStatistics($isAdmin, $hallId),
+            'rooms' => $this->getRoomStatistics($hallIds, $isAdmin, $hallId),
         ];
     }
 
     /**
      * Get student related statistics
      */
-    private function getStudentStatistics($hallIds, $isAdmin)
+    private function getStudentStatistics($hallIds, $isAdmin, $hallId = null)
     {
         $query = Student::query();
         
-        if (!$isAdmin) {
+        if ($hallId) {
+            $query->where('hall_id', $hallId);
+        } elseif (!$isAdmin) {
             $query->whereIn('hall_id', $hallIds);
         }
-        
-        $total = $query->count();
-        $allotted = (clone $query)->where('hall_status', 'alloted')->count();
-        $attachment = (clone $query)->where('hall_status', 'attachment')->count();
-        $blocked = (clone $query)->where('is_active', false)->count();
+
+        $stats = $query->selectRaw('
+            COUNT(*) as `total`,
+            SUM(CASE WHEN hall_status = "alloted" THEN 1 ELSE 0 END) as `allotted`,
+            SUM(CASE WHEN hall_status = "attachment" THEN 1 ELSE 0 END) as `attachment`,
+            SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as `blocked`
+        ')->first();
         
         return [
-            'total' => $total,
-            'allotted' => $allotted,
-            'attachment' => $attachment,
-            'blocked' => $blocked,
+            'total' => (int) $stats->total,
+            'allotted' => (int) $stats->allotted,
+            'attachment' => (int) $stats->attachment,
+            'blocked' => (int) $stats->blocked,
         ];
     }
 
     /**
      * Get seat related statistics
      */
-    private function getSeatStatistics($hallIds, $isAdmin)
+    private function getSeatStatistics($hallIds, $isAdmin, $hallId = null)
     {
         $query = Seat::query();
         
-        if (!$isAdmin) {
-            // Seats are related to rooms, rooms have hall_id
+        if ($hallId) {
+            $query->whereHas('room', function($q) use ($hallId) {
+                $q->where('hall_id', $hallId);
+            });
+        } elseif (!$isAdmin) {
             $query->whereHas('room', function($q) use ($hallIds) {
                 $q->whereIn('hall_id', $hallIds);
             });
         }
+
+        $stats = $query->selectRaw('
+            COUNT(*) as `total`,
+            SUM(CASE WHEN status = "alloted" THEN 1 ELSE 0 END) as `allotted`,
+            SUM(CASE WHEN status = "empty" THEN 1 ELSE 0 END) as `empty`
+        ')->first();
         
-        $total = $query->count();
-        $allotted = (clone $query)->where('status', 'alloted')->count();
-        $empty = (clone $query)->where('status', 'empty')->count();
+        $total = (int) $stats->total;
+        $allotted = (int) $stats->allotted;
+        $empty = (int) $stats->empty;
         
         $occupancyRate = $total > 0 ? round(($allotted / $total) * 100, 1) : 0;
         
@@ -89,10 +103,10 @@ class DashboardService
     /**
      * Get hall statistics (admin only sees all)
      */
-    private function getHallStatistics($isAdmin)
+    private function getHallStatistics($isAdmin, $hallId = null)
     {
-        if (!$isAdmin) {
-            return null; // Provost doesn't need this
+        if ($hallId || !$isAdmin) {
+            return null; // Don't show hall stats when a single hall is selected
         }
         
         return [
@@ -104,11 +118,13 @@ class DashboardService
     /**
      * Get room statistics
      */
-    private function getRoomStatistics($hallIds, $isAdmin)
+    private function getRoomStatistics($hallIds, $isAdmin, $hallId = null)
     {
         $query = Room::query();
         
-        if (!$isAdmin) {
+        if ($hallId) {
+            $query->where('hall_id', $hallId);
+        } elseif (!$isAdmin) {
             $query->whereIn('hall_id', $hallIds);
         }
         
@@ -120,10 +136,10 @@ class DashboardService
     /**
      * Get pending actions that need attention
      */
-    public function getPendingActions()
+    public function getPendingActions($hallId = null)
     {
         $user = Auth::user();
-        $hallIds = collect($user->halls ?? []);
+        $hallIds = $hallId ? collect([$hallId]) : collect($user->halls ?? []);
         
         $cancellationRequests = HallAllotment::whereIn('hall_id', $hallIds)
             ->where('status', 'cancel_requested')
@@ -190,26 +206,31 @@ class DashboardService
     /**
      * Get monthly allotment trends for the last 6 months
      */
-    public function getMonthlyTrendsData()
+    public function getMonthlyTrendsData($hallId = null)
     {
         $user = Auth::user();
-        $hallIds = collect($user->halls ?? []);
+        $hallIds = $hallId ? collect([$hallId]) : collect($user->halls ?? []);
+        
+        $startDate = now()->subMonths(5)->startOfMonth();
+        
+        $monthlyCounts = HallAllotment::whereIn('hall_id', $hallIds)
+            ->where('status', 'active')
+            ->where('allotment_date', '>=', $startDate)
+            ->selectRaw('DATE_FORMAT(allotment_date, "%Y-%m") as month_key, COUNT(*) as count')
+            ->groupBy('month_key')
+            ->get()
+            ->pluck('count', 'month_key');
         
         $trends = [];
         
         for ($i = 5; $i >= 0; $i--) {
-            $month = now()->subMonths($i)->format('Y-m');
-            $monthName = now()->subMonths($i)->format('M Y');
-            
-            $count = HallAllotment::whereIn('hall_id', $hallIds)
-                ->where('status', 'active')
-                ->whereYear('allotment_date', '=', now()->subMonths($i)->year)
-                ->whereMonth('allotment_date', '=', now()->subMonths($i)->month)
-                ->count();
+            $date = now()->subMonths($i);
+            $monthKey = $date->format('Y-m');
+            $monthName = $date->format('M Y');
             
             $trends[] = [
                 'month' => $monthName,
-                'count' => $count,
+                'count' => $monthlyCounts->get($monthKey, 0),
             ];
         }
         
@@ -256,13 +277,13 @@ class DashboardService
     /**
      * Get all dashboard data in one call
      */
-    public function getDashboardData()
+    public function getDashboardData($hallId = null)
     {
         return [
-            'statistics' => $this->getStatistics(),
-            'pending_actions' => $this->getPendingActions(),
+            'statistics' => $this->getStatistics($hallId),
+            'pending_actions' => $this->getPendingActions($hallId),
             'hall_occupancy' => $this->getHallOccupancyData(),
-            'monthly_trends' => $this->getMonthlyTrendsData(),
+            'monthly_trends' => $this->getMonthlyTrendsData($hallId),
             'recent_activities' => $this->getRecentActivities(),
         ];
     }
